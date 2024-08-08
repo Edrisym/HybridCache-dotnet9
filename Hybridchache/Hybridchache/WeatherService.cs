@@ -1,47 +1,56 @@
-using System.Globalization;
 using System.Net;
-using Hybridchache.Wrapper;
-using Microsoft.Extensions.Caching.Hybrid;
+using System.Text.Json;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Hybridchache;
 
-public class WeatherService
+public class WeatherService(IHttpClientFactory httpClientFactory, IDistributedCache distributedCache)
 {
-    private readonly IHybridCacheWrapper _hybridCache;
-    private readonly IHttpClientFactory _httpClientFactory;
-
-    public WeatherService(IHybridCacheWrapper hybridCache, IHttpClientFactory httpClientFactory)
-    {
-        _hybridCache = hybridCache;
-        _httpClientFactory = httpClientFactory;
-    }
-
-
     public async Task<WeatherResponse?> GetCurrentWeatherAsync(string city)
     {
-        var cacheKey = $"weather:{city}";
+        var cacheKey = GetCacheKey(city);
 
-        var weatherJson = await _hybridCache.GetOrCreateAsync<WeatherResponse?>(cacheKey,
-            async _ => await GetWeatherAsync(city),
-            options: new HybridCacheEntryOptions
-            {
-                Flags = HybridCacheEntryFlags.DisableDistributedCache,
-                Expiration = TimeSpan.FromMinutes(1)
-            });
+        var cachedWeather = await GetWeatherFromCacheAsync(cacheKey);
+        if (cachedWeather != null) return cachedWeather;
 
-        return weatherJson;
+        var weatherResponse = await GetWeatherFromApiAsync(city);
+        await CacheWeatherAsync(cacheKey, weatherResponse);
+
+        return weatherResponse;
     }
 
-    private async Task<WeatherResponse?> GetWeatherAsync(string cityName)
+    private string GetCacheKey(string city) => $"weather:{city}";
+
+    private async Task<WeatherResponse?> GetWeatherFromCacheAsync(string cacheKey)
+    {
+        var cachedWeatherJson = await distributedCache.GetAsync(cacheKey);
+        return cachedWeatherJson != null
+            ? JsonSerializer.Deserialize<WeatherResponse>(cachedWeatherJson)
+            : null;
+    }
+
+    private async Task CacheWeatherAsync(string cacheKey, WeatherResponse weatherResponse)
+    {
+        var value = JsonSerializer.Serialize(weatherResponse);
+        await distributedCache.SetStringAsync(cacheKey,
+            value,
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
+    }
+
+    private async Task<WeatherResponse?> GetWeatherFromApiAsync(string cityName)
     {
         var apiKey = "2e73decf9ba4a924a2a7cfd3c2c68ef8";
         var url = $"https://api.openweathermap.org/data/2.5/weather?q={cityName}&appid={apiKey}";
 
-        var httpClient = _httpClientFactory.CreateClient();
+        var httpClient = httpClientFactory.CreateClient();
         var weatherResponse = await httpClient.GetAsync(url);
 
         if (weatherResponse.StatusCode == HttpStatusCode.NotFound)
         {
+            // Handle case where weather data couldn't be fetched
             return null;
         }
 

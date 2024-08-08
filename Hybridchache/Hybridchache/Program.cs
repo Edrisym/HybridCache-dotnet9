@@ -2,6 +2,7 @@ using System.Net;
 using Hybridchache;
 using Microsoft.Extensions.Caching.Hybrid;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
@@ -10,16 +11,21 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<WeatherService>();
 
-builder.Services.AddHybridCache(options =>
+builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.MaximumPayloadBytes = 1024 * 1024;
-    options.MaximumKeyLength = 1024;
-    options.DefaultEntryOptions = new HybridCacheEntryOptions
-    {
-        Expiration = TimeSpan.FromMinutes(5),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
-    };
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
 });
+
+// builder.Services.AddHybridCache(options =>
+// {
+//     options.MaximumPayloadBytes = 1024 * 1024;
+//     options.MaximumKeyLength = 1024;
+//     options.DefaultEntryOptions = new HybridCacheEntryOptions
+//     {
+//         Expiration = TimeSpan.FromMinutes(5),
+//         LocalCacheExpiration = TimeSpan.FromMinutes(5)
+//     };
+// });
 
 
 var app = builder.Build();

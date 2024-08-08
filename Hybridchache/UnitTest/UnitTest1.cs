@@ -1,6 +1,6 @@
 using System.Net;
 using Hybridchache;
-using Hybridchache.Wrapper;
+// using Hybridchache.Wrapper;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -11,16 +11,16 @@ using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 [TestFixture]
 public class WeatherServiceTests
 {
-    private Mock<IHybridCacheWrapper> _hybridCacheMock;
+    // private Mock<IHybridCacheWrapper> _hybridCacheMock;
     private Mock<IHttpClientFactory> _httpClientFactoryMock;
     private WeatherService _weatherService;
 
     [SetUp]
     public void SetUp()
     {
-        _hybridCacheMock = new Mock<IHybridCacheWrapper>();
+        // _hybridCacheMock = new Mock<IHybridCacheWrapper>();
         _httpClientFactoryMock = new Mock<IHttpClientFactory>();
-        _weatherService = new WeatherService(_hybridCacheMock.Object, _httpClientFactoryMock.Object);
+        // _weatherService = new WeatherService(_hybridCacheMock.Object, _httpClientFactoryMock.Object);
     }
 
     [Test]
@@ -38,14 +38,14 @@ public class WeatherServiceTests
             Visibility = 10000,
             Timezone = 16200
         };
-
-        _hybridCacheMock.Setup(x => x.GetOrCreateAsync(
-            It.Is<string>(k => k == cacheKey),
-            It.IsAny<Func<CancellationToken, ValueTask<WeatherResponse?>>>(),
-            It.IsAny<HybridCacheEntryOptions>(),
-            It.IsAny<IReadOnlyCollection<string>>(),
-            It.IsAny<CancellationToken>()
-        )).ReturnsAsync(weatherResponse);
+        //
+        // _hybridCacheMock.Setup(x => x.GetOrCreateAsync(
+        //     It.Is<string>(k => k == cacheKey),
+        //     It.IsAny<Func<CancellationToken, ValueTask<WeatherResponse?>>>(),
+        //     It.IsAny<HybridCacheEntryOptions>(),
+        //     It.IsAny<IReadOnlyCollection<string>>(),
+        //     It.IsAny<CancellationToken>()
+        // )).ReturnsAsync(weatherResponse);
 
         var result = await _weatherService.GetCurrentWeatherAsync(city);
 
