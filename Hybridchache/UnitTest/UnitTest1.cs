@@ -2,24 +2,28 @@ using System.Net;
 using Hybridchache;
 using Hybridchache.Wrapper;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.Protected;
+using NUnit.Framework;
 using Assert = Microsoft.VisualStudio.TestTools.UnitTesting.Assert;
 
+[TestFixture]
 public class WeatherServiceTests
 {
-    private readonly Mock<IHybridCacheWrapper> _hybridCacheMock;
-    private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
-    private readonly WeatherService _weatherService;
+    private Mock<IHybridCacheWrapper> _hybridCacheMock;
+    private Mock<IHttpClientFactory> _httpClientFactoryMock;
+    private WeatherService _weatherService;
 
-    public WeatherServiceTests()
+    [SetUp]
+    public void SetUp()
     {
         _hybridCacheMock = new Mock<IHybridCacheWrapper>();
         _httpClientFactoryMock = new Mock<IHttpClientFactory>();
         _weatherService = new WeatherService(_hybridCacheMock.Object, _httpClientFactoryMock.Object);
     }
 
-    [Fact]
+    [Test]
     public async Task GetCurrentWeatherAsync_ShouldReturnWeatherResponse_WhenCityExists()
     {
         var city = "Tehran";
@@ -49,7 +53,7 @@ public class WeatherServiceTests
         Assert.AreEqual(city, result.Name);
     }
 
-    [Fact]
+    [Test]
     public async Task GetWeatherAsync_ShouldReturnNull_WhenCityDoesNotExist()
     {
         // Arrange
