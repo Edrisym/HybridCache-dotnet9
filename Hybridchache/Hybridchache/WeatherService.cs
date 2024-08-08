@@ -1,15 +1,16 @@
 using System.Globalization;
 using System.Net;
+using Hybridchache.Wrapper;
 using Microsoft.Extensions.Caching.Hybrid;
 
 namespace Hybridchache;
 
 public class WeatherService
 {
-    private readonly HybridCache _hybridCache;
+    private readonly IHybridCacheWrapper _hybridCache;
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public WeatherService(HybridCache hybridCache, IHttpClientFactory httpClientFactory)
+    public WeatherService(IHybridCacheWrapper hybridCache, IHttpClientFactory httpClientFactory)
     {
         _hybridCache = hybridCache;
         _httpClientFactory = httpClientFactory;

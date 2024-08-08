@@ -3,21 +3,21 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Hybridchache;
+using Hybridchache.Wrapper;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Caching.Memory;
 using Moq;
 using Moq.Protected;
 using Xunit;
 
 public class WeatherServiceTests
 {
-    private readonly Mock<HybridCache> _hybridCacheMock;
+    private readonly Mock<IHybridCacheWrapper> _hybridCacheMock;
     private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
     private readonly WeatherService _weatherService;
 
     public WeatherServiceTests()
     {
-        _hybridCacheMock = new Mock<HybridCache>();
+        _hybridCacheMock = new Mock<IHybridCacheWrapper>();
         _httpClientFactoryMock = new Mock<IHttpClientFactory>();
         _weatherService = new WeatherService(_hybridCacheMock.Object, _httpClientFactoryMock.Object);
     }
@@ -25,7 +25,6 @@ public class WeatherServiceTests
     [Fact]
     public async Task GetCurrentWeatherAsync_ShouldReturnWeatherResponse_WhenCityExists()
     {
-        // Arrange
         var city = "Tehran";
         var cacheKey = $"weather:{city}";
 
@@ -42,17 +41,16 @@ public class WeatherServiceTests
             Timezone = 16200
         };
 
-
         _hybridCacheMock.Setup(x => x.GetOrCreateAsync(
             It.Is<string>(k => k == cacheKey),
-            It.IsAny<Func<CancellationToken, ValueTask<WeatherResponse?>>>()
-        ))
-            .ReturnsAsync(weatherResponse);
-        
-        // Act
+            It.IsAny<Func<CancellationToken, ValueTask<WeatherResponse?>>>(),
+            It.IsAny<HybridCacheEntryOptions>(),
+            It.IsAny<IReadOnlyCollection<string>>(),
+            It.IsAny<CancellationToken>()
+        )).ReturnsAsync(weatherResponse);
+
         var result = await _weatherService.GetCurrentWeatherAsync(city);
 
-        // Assert
         Assert.NotNull(result);
         Assert.Equal(city, result.Name);
     }
@@ -67,7 +65,9 @@ public class WeatherServiceTests
 
         var httpMessageHandlerMock = new Mock<HttpMessageHandler>();
         httpMessageHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>("SendAsync", It.IsAny<HttpRequestMessage>(), It.IsAny<CancellationToken>())
+            .Setup<Task<HttpResponseMessage>>("SendAsync", 
+                ItExpr.IsNull<HttpRequestMessage>(),
+                ItExpr.IsNull<CancellationToken>())
             .ReturnsAsync(new HttpResponseMessage
             {
                 StatusCode = HttpStatusCode.NotFound,
@@ -75,7 +75,9 @@ public class WeatherServiceTests
 
         var httpClient = new HttpClient(httpMessageHandlerMock.Object);
 
-        _httpClientFactoryMock.Setup(x => x.CreateClient(It.IsAny<string>())).Returns(httpClient);
+        _httpClientFactoryMock.Setup(x => x.CreateClient(
+            It.IsNotNull<string>()))
+            .Returns(httpClient);
 
         // Act
         var result = await _weatherService.GetCurrentWeatherAsync(city);
@@ -84,3 +86,4 @@ public class WeatherServiceTests
         Assert.Null(result);
     }
 }
+
